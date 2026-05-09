@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GrocBankX</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+}
+
+/* HEADER */
+header {
+  background: #ffffff;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+header h1 span { color: #2ecc71; }
+
+button {
+  background: #2ecc71;
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* MAIN */
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* PRODUCTS */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(180px,1fr));
+  gap: 15px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.emoji { font-size: 40px; }
+.price { color: #2ecc71; font-weight: bold; }
+
+/* BACKDROP */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: none;
+  z-index: 998;
+}
+.backdrop.show { display: block; }
+
+/* SLIDE PANELS */
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: #f9f9f9;
+  box-shadow: -4px 0 12px rgba(0,0,0,0.2);
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.panel.show { transform: translateX(0); }
+
+/* CART */
+.cart-item {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* PAYMENT CARD */
+.payment-card {
+  background: linear-gradient(135deg,#2d6cdf,#4c89ff);
+  color: white;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+}
+
+/* CAMERA MODAL (VIDEO ONLY) */
+.camera-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.camera-modal.show {
+  display: flex;
+}
+
+.camera-content {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 320px;
+  text-align: center;
+}
+
+.camera-content video {
+  width: 100%;
+  border-radius: 8px;
+  border: 2px solid #333;
+  margin: 10px 0;
+}
+
+.warning-text {
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+.cancel {
+  background: #999;
+}
+
+/* FOOTER */
+footer {
+  text-align: center;
+  padding: 15px;
+  font-size: 14px;
+  color: #777;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🛒 Groc<span>BankX</span></h1>
+  <button onclick="openCart()">Cart (<span id="cartCount">0</span>)</button>
+</header>
+
+<div class="container">
+  <h2>Fresh Products</h2>
+  <div class="grid" id="products"></div>
+</div>
+
+<div class="backdrop" id="backdrop" onclick="closePanels()"></div>
+
+<!-- CART PANEL -->
+<div class="panel" id="cartPanel">
+  <h2>Your Cart</h2>
+  <div id="cartItems"></div>
+  <h3>Total: $<span id="total">0.00</span></h3>
+  <button onclick="openPayment()">Proceed to Payment</button>
+</div>
+
+<!-- PAYMENT PANEL -->
+<div class="panel" id="paymentPanel">
+  <h2>Payment</h2>
+
+  <div class="payment-card">
+    <p>BankX Credit</p>
+    <h3 id="cardPreview">•••• •••• •••• ••••</h3>
+    <p id="namePreview">YOUR NAME</p>
+    <p id="expiryPreview">MM/YY</p>
+  </div>
+
+  <input placeholder="Card Number" oninput="updateCard(this.value)">
+  <input placeholder="Cardholder Name" oninput="namePreview.textContent=this.value.toUpperCase()">
+  <input placeholder="MM/YY" oninput="expiryPreview.textContent=this.value">
+  <input placeholder="CVV" type="password">
+
+  <h3>Pay $<span id="payAmount"></span></h3>
+  <button onclick="pay()">Pay Now</button>
+</div>
+
+<!-- CAMERA MODAL -->
+<div id="cameraModal" class="camera-modal">
+  <div class="camera-content">
+    <h3>🔐 Identity Verification</h3>
+    <p class="warning-text">Suspicious transaction detected</p>
+    <video id="cameraVideo" autoplay muted playsinline></video>
+    <button onclick="capture()">Verify Face</button>
+    <button class="cancel" onclick="closeCamera()">Cancel</button>
+  </div>
+</div>
+
+<footer>© 2025 GrocBankX</footer>
+
+<script>
+const backendURL = "http://127.0.0.1:5000";
+let cameraStream = null;
+
+const products = [
+ ["🍎","Fresh Apples",3.99], ["🍌","Organic Bananas",2.49],
+ ["🍊","Ripe Oranges",4.29], ["🥛","Fresh Milk",5.99],
+ ["🥚","Farm Eggs",6.49], ["🧀","Cheddar Cheese",7.99]
+];
+
+const cart = {};
+const productDiv = document.getElementById("products");
+
+products.forEach((p,i)=>{
+  productDiv.innerHTML += `
+  <div class="card">
+    <div class="emoji">${p[0]}</div>
+    <h4>${p[1]}</h4>
+    <p class="price">$${p[2]}</p>
+    <button onclick="add(${i})">Add</button>
+  </div>`;
+});
+
+function add(i){
+  cart[i] = (cart[i] || 0) + 1;
+  cartCount.textContent = Object.values(cart).reduce((a,b)=>a+b,0);
+}
+
+function openCart(){
+  renderCart();
+  cartPanel.classList.add("show");
+  backdrop.classList.add("show");
+}
+
+function renderCart(){
+  let total = 0;
+  cartItems.innerHTML = "";
+  for(let i in cart){
+    total += cart[i] * products[i][2];
+    cartItems.innerHTML += `<div class="cart-item">${products[i][1]} x ${cart[i]}</div>`;
+  }
+  total = total.toFixed(2);
+  totalSpan = document.getElementById("total");
+  totalSpan.textContent = total;
+  payAmount.textContent = total;
+}
+
+function openPayment(){
+  cartPanel.classList.remove("show");
+  paymentPanel.classList.add("show");
+}
+
+function closePanels(){
+  cartPanel.classList.remove("show");
+  paymentPanel.classList.remove("show");
+  backdrop.classList.remove("show");
+}
+
+function updateCard(v){
+  cardPreview.textContent = v.replace(/\D/g,"").replace(/(.{4})/g,"$1 ").trim();
+}
+
+function pay(){
+  const amount = payAmount.textContent;
+  const items = Object.values(cart).reduce((a,b)=>a+b,0);
+
+  fetch(`${backendURL}/check-fraud`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ amount, items })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.status==="SUSPICIOUS"){
+      openCamera();
+    } else {
+      alert("✅ Payment Successful!");
+      location.reload();
+    }
+  });
+}
+
+/* CAMERA FUNCTIONS */
+function openCamera(){
+  cameraModal.classList.add("show");
+  document.body.style.overflow = "hidden";
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      cameraStream = stream;
+      cameraVideo.srcObject = stream;
+    })
+    .catch(err => {
+      alert("Camera access denied");
+      console.error(err);
+    });
+}
+
+function closeCamera(){
+  cameraModal.classList.remove("show");
+  document.body.style.overflow="auto";
+
+  if(cameraStream){
+    cameraStream.getTracks().forEach(t=>t.stop());
+    cameraStream = null;
+  }
+}
+
+function capture(){
+  const video = document.getElementById("cameraVideo");
+
+  // 🔴 SAFETY CHECK
+  if(video.videoWidth === 0){
+    alert("Camera not ready. Please wait 1 second and try again.");
+    return;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  alert("📸 Capturing image...");
+
+  canvas.toBlob(blob => {
+    if(!blob){
+      alert("❌ Failed to capture image");
+      return;
+    }
+
+    const formData = new FormData();
+
+    
+    formData.append("image", blob, "live.jpg");
+
+
+
+    alert("📤 Sending image to server...");
+
+    fetch(`${backendURL}/verify-face`, {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert("📥 Server response received");
+
+      closeCamera();
+
+      if(data.status === "APPROVED"){
+        alert("✅ Identity verified. Payment successful!");
+        location.reload();
+      } else {
+        alert("❌ Face not matched. Payment blocked!");
+      }
+    })
+    .catch(err => {
+      alert("❌ Error sending image to backend");
+      console.error(err);
+    });
+
+  }, "image/jpeg", 0.95);
+}
+
+</script>
+
+</body>
+</html>

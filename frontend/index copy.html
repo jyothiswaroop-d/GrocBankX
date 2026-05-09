@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GrocBankX Checkout</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h2>🛒 GrocBankX Grocery Checkout</h2>
+
+  <div class="box">
+    <label>Total Amount (₹)</label>
+    <input type="number" id="amount" placeholder="Enter amount">
+
+    <label>Number of Items</label>
+    <input type="number" id="items" placeholder="Enter item count">
+
+    <label>Card Number</label>
+    <input type="text" placeholder="XXXX-XXXX-XXXX-XXXX">
+
+    <label>Expiry</label>
+    <input type="text" placeholder="MM/YY">
+
+    <label>CVV</label>
+    <input type="password" placeholder="***">
+
+    <button onclick="pay()">Pay Now</button>
+  </div>
+
+  <!-- Camera Section -->
+  <div id="cameraBox" class="camera-box">
+    <h3>🔐 Identity Verification</h3>
+    <video id="video" autoplay></video>
+    <button onclick="capture()">Verify Face</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

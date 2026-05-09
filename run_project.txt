@@ -1,0 +1,15 @@
+py --list
+
+if 3.10 is not installed https://www.python.org/downloads/windows/  :
+        py -3.10 -m venv venv  
+
+.\venv\Scripts\Activate.ps1
+
+C:\Progam_Data\GrocBankX
+
+cd backend
+pip install --upgrade pip
+pip install -r requirements.txt
+
+
+when installing the requirements there may be an error arrive at cmake 
