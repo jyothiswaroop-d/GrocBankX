@@ -2,8 +2,11 @@
 
 💳 Credit Card Fraud Detection Dataset
 This dataset contains numerical features that represent transaction behavior, along with a Class label where:
+
 •0 represents a normal transaction
+
 •1 represents a fraudulent transaction
+
 The dataset is imbalanced, meaning fraudulent transactions are less frequent than normal ones, which makes fraud detection challenging.
 
 From this dataset, I used two features to simulate a real-world grocery payment scenario. I performed preprocessing, handled the imbalance, trained a machine learning model, and saved the trained model using the .pkl extension for reuse in the application.
