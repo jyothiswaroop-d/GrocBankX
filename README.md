@@ -33,4 +33,36 @@ Instead of directly blocking the transaction, I designed a risk-based authentica
 3)This approach allows genuine users to complete their transaction securely without unnecessary blocking.
 
 
+Flow Diagram : 
+                GrocBankX Store
+                      │
+                 Add Products
+                      │
+                    Cart
+                      │
+                  Pay Now
+                      │
+                      ▼
+             ┌─────────────────┐
+             │ Fraud Detection │
+             │  Random Forest  │
+             └────────┬────────┘
+                      │
+              ┌───────┴────────┐
+              │                │
+           Normal           Suspicious
+              │                │
+              ▼                ▼
+          Payment          Face Verification
+          Approved          / Liveness
+                               │
+                         ┌─────┴─────┐
+                         │           │
+                      Verified    Failed
+                         │           │
+                      Approve      Block
+
+
+
+
 
